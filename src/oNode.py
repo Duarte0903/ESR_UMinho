@@ -4,11 +4,11 @@ import threading
 import time
 
 class Node:
-    def __init__(self, endereco="10.0.0.10"):
+    def __init__(self, endereco="10.0.10.10"):
         self.neighbours = []
         self.interface_status = {}
         self.monitoring_rec = {}
-        self.endereco = endereco
+        self.server_address = endereco
         self.incoming_server = "-1"
         self.PACKET_TTL = -1
         self.lock = threading.Lock()
@@ -61,7 +61,7 @@ class Node:
     def get_neighbours(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         msg = "get_neighbours"
-        s.sendto(msg.encode('utf-8'), (self.endereco, 2000))
+        s.sendto(msg.encode('utf-8'), (self.server_address, 2000))
         resposta, server_add = s.recvfrom(1024)
 
         self.PACKET_TTL = int(resposta.decode('utf-8').split(";")[1])
@@ -159,17 +159,26 @@ class Node:
     # Função que permite fazer o reenvio do vídeo para os vizinhos cujas interfaces estejam ativas
     def difusion_processing(self, s, msg, add):  # controlled flooding
         incoming_ip = add[0]
-        delays = []
-
+        print(f"Received video from {incoming_ip}")
+        
         with self.lock:
             for id in self.monitoring_rec:
-                delays.append((self.monitoring_rec[id]['ip'], self.monitoring_rec[id]['delay']))  # colecionar todos os pares (ip, delay) dos vizinhos deste nodo
-
-            if incoming_ip == self.monitoring_rec[self.incoming_server]['ip']:  # só envia o vídeo se o ip do qual veio o vídeo for a interface com menor delay
-                print(f'\n\nVideo incoming from: {incoming_ip}\n\n')
+                print(f"Checking monitoring record for {id}: {self.monitoring_rec[id]}")
+            
+            if incoming_ip == self.monitoring_rec[self.incoming_server]['ip']:
+                print(f'Sending video to active interfaces from: {incoming_ip}')
                 for ip, status in self.interface_status.items():
-                    if ip != add[0] and status:
-                        s.sendto(msg, (ip, 6000))
+                    if ip != incoming_ip and status:
+                        print(f"Sending video to: {ip}")  
+                        try:
+                            s.sendto(msg, (ip, 6000))
+                            print(f"Video sent to {ip} successfully.")
+                        except Exception as e:
+                            print(f"Failed to send video to {ip}: {e}")
+            else:
+                print(f"Incoming video not from the optimal server ({self.incoming_server}), ignoring.")
+
+
 
     # Serviço que se encontra sempre disponível na porta 6000 que trata dos pacotes de vídeo vindos de um servidor
     def difusion_service(self):
@@ -178,9 +187,13 @@ class Node:
         PORT = 6000
         s.bind((HOST, PORT))
 
+        print(f"A receiving video on: {HOST}:{PORT}")
+
         while True:
             msg, add = s.recvfrom(20480)
+            print(f"Received video from {add[0]}")  # Log the incoming video source
             threading.Thread(target=self.difusion_processing, args=(s, msg, add)).start()
+
 
     def main(self):
         self.get_neighbours()
@@ -188,7 +201,6 @@ class Node:
         print(self.neighbours)
         threading.Thread(target=self.request_video_service).start()
         threading.Thread(target=self.probe_service).start()
-
 
 if __name__ == "__main__":
     node = Node()

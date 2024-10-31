@@ -8,15 +8,17 @@ from RtpPacket import RtpPacket
 from bootstrap import BootstrapService
 
 class Server:
-    def __init__(self, id: str, config_file: str = "../topologias/top2_config.json"):
-        self.id = id
+    def __init__(self, server_id: str, config_file: str = "../topologias/top3_config.json"):
+        self.id = server_id
         self.config_file = config_file
         self.neighbours = []
         self.probe_round = 0
-        self.video_streaming = True
-        self.difusion_node = "10.0.0.10"
+        self.difusion_node = "10.0.10.1"
         self.clientInfo = {}
-        self.bootstrap_server = BootstrapService(self.config_file)  # Servico de Bootstrap na porta 2000
+        self.bootstrap_server = BootstrapService(self.config_file)  # porta 2000
+        self.running = True
+        self.lock = threading.Lock()
+        self.filename = None
         self.get_neighbours()
 
     def get_neighbours(self):
@@ -27,40 +29,53 @@ class Server:
 
     def request_video_processing(self, s: socket.socket, msg: bytes, addr: tuple):
         print("Received a video processing request:", msg)
-        filename = msg.decode('utf-8').split(";")[0]
-        self.start_video_streaming(filename)
+        self.filename = msg.decode('utf-8').split(";")[0]
+        self.start_video_streaming(self.filename)
 
     def start_video_streaming(self, filename):
-        self.clientInfo['videoStream'] = VideoStream(filename)
-        self.clientInfo['rtpPort'] = 25000
-        self.clientInfo['rtpAddr'] = socket.gethostbyname(self.difusion_node)
-        print("Sending to Addr:", self.clientInfo['rtpAddr'], ":", self.clientInfo['rtpPort'])
+        with self.lock:  # Ensure thread safety
+            self.clientInfo['videoStream'] = VideoStream(filename)
+            self.clientInfo['rtpPort'] = 25000
+            self.clientInfo['rtpAddr'] = socket.gethostbyname(self.difusion_node)
+            print("Sending to Addr:", self.clientInfo['rtpAddr'], ":", self.clientInfo['rtpPort'])
 
-        # Create a new socket for RTP/UDP
-        self.clientInfo["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.clientInfo['event'] = threading.Event()
-        self.clientInfo['worker'] = threading.Thread(target=self.send_rtp)
-        self.clientInfo['worker'].start()
+            # Create a new socket for RTP/UDP
+            self.clientInfo["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.clientInfo['event'] = threading.Event()
+            self.clientInfo['worker'] = threading.Thread(target=self.send_rtp)
+            self.clientInfo['worker'].start()
 
     def send_rtp(self):
         """Send RTP packets over UDP."""
-        while True:
+        while self.running:
             self.clientInfo['event'].wait(0.05)
             if self.clientInfo['event'].isSet():
                 break
-            data = self.clientInfo['videoStream'].nextFrame()
-            if data:
-                frameNumber = self.clientInfo['videoStream'].frameNbr()
-                try:
+
+            try:
+                with self.lock:  # Ensure thread safety
+                    data = self.clientInfo['videoStream'].nextFrame()
+
+                if data:
+                    frameNumber = self.clientInfo['videoStream'].frameNbr()
                     address = self.clientInfo['rtpAddr']
                     port = int(self.clientInfo['rtpPort'])
                     packet = self.make_rtp(data, frameNumber)
                     self.clientInfo['rtpSocket'].sendto(packet, (address, port))
-                except Exception as e:
-                    print("Connection Error:", e)
-                    continue
-        self.clientInfo['rtpSocket'].close()
+                else:
+                    print("End of video stream reached. Restarting...")
+                    # Restart the video stream
+                    with self.lock:
+                        self.clientInfo['videoStream'] = VideoStream(self.filename)  # Restart the video stream
+
+            except Exception as e:
+                print("Connection Error:", e)
+                continue
+
+        with self.lock:
+            self.clientInfo['rtpSocket'].close()
         print("All done!")
+
 
     def make_rtp(self, payload, frameNbr):
         """RTP-packetize the video data."""
@@ -85,16 +100,18 @@ class Server:
         s.bind(('', port))
         print(f"Listening on port: {port}")
 
-        while True:
-            msg, addr = s.recvfrom(1024)
-            self.video_streaming = False
-            threading.Thread(target=self.request_video_processing, args=(s, msg, addr)).start()
+        while self.running:
+            try:
+                msg, addr = s.recvfrom(1024)
+                threading.Thread(target=self.request_video_processing, args=(s, msg, addr)).start()
+            except Exception as e:
+                print(f"Error in receiving data: {e}")
 
         s.close()
 
-    def make_probe(self, server_id, timeStamp, n_steps, probe_round):
+    def make_probe(self):
         packet: bytes
-        message = f'{server_id};{timeStamp};{n_steps};{probe_round}'
+        message = f'{self.id};{time.time()};0;{self.probe_round}'
         print(message)
         return message.encode('utf-8')
 
@@ -103,28 +120,43 @@ class Server:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.bind(('', port))
 
-        while True:
-            packet = self.make_probe(self.id, time.time(), 0, self.probe_round)
+        while self.running:
+            packet = self.make_probe()
             for neighbour in self.neighbours:
                 print(f"Sending probes to: {neighbour}:{port}")
                 s.sendto(packet, (neighbour, port))
             time.sleep(20)
             self.probe_round += 1
 
+        s.close()
+
     def run(self):
-        threading.Thread(target=self.bootstrap_server.start_service).start()  # Start the bootstrap server
+        threading.Thread(target=self.bootstrap_server.start_service).start()
         threading.Thread(target=self.request_video_service).start()
         threading.Thread(target=self.send_probe_service).start()
 
+    def stop(self):
+        """Stop all services gracefully."""
+        self.running = False
+        with self.lock:
+            if 'event' in self.clientInfo:
+                self.clientInfo['event'].set()
+
 def main():
     if len(sys.argv) != 2:
-        print("[Usage: python server.py <server_id>]")
+        print("[Usage: python3 server.py <server_id>]")
         print("  <server_id>: Unique identifier for the server.")
         sys.exit(1)
 
     server_id = sys.argv[1]
     server = Server(server_id)
-    server.run()
+    try:
+        server.run()
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Stopping server...")
+        server.stop()
 
 if __name__ == '__main__':
     main()

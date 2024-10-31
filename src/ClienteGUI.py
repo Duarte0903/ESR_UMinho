@@ -4,7 +4,7 @@ from PIL import Image, ImageTk
 import socket
 import threading
 import os
-import random  # Import the random module
+import random
 
 from RtpPacket import RtpPacket  # Adjust the import based on your structure
 
