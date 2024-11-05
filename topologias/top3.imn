@@ -581,7 +581,7 @@ annotation a1 {
     label {}
     labelcolor black
     fontfamily {Arial}
-    fontsize 12
+    fontsize {12}
     color #C0C0FF
     width 0
     border black
@@ -595,7 +595,7 @@ annotation a2 {
     label {}
     labelcolor black
     fontfamily {Arial}
-    fontsize 12
+    fontsize {12}
     color #c0e98c
     width 0
     border black
@@ -609,7 +609,7 @@ annotation a3 {
     label {Rede de Acesso}
     labelcolor black
     fontfamily {Arial}
-    fontsize 12
+    fontsize {12}
     effects {bold italic underline}
     canvas c1
 }
@@ -620,7 +620,7 @@ annotation a4 {
     label {CDN}
     labelcolor black
     fontfamily {Arial}
-    fontsize 12
+    fontsize {12}
     effects {bold italic underline}
     canvas c1
 }
@@ -631,7 +631,7 @@ canvas c1 {
 
 option global {
     interface_names no
-    ip_addresses no
+    ip_addresses yes
     ipv6_addresses no
     node_labels yes
     link_labels yes

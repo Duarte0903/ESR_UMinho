@@ -113,6 +113,7 @@ class Node:
         for n in self.neighbours:
             if n != address[0] and steps < self.PACKET_TTL:
                 s.sendto(packet, (n, port))
+                print(f"\033[93mSending probes to: {n}\033[0m")
 
         incoming_delay = (send_timeStamp - rcv_timeStamp) * 1e3
 
@@ -153,7 +154,7 @@ class Node:
 
         while True:
             msg, address = s.recvfrom(1024)
-            print("recebi probe:", msg)
+            print(f"\033[94mrecebi probe: {msg}\033[0m")
             threading.Thread(target=self.probe_processing, args=(s, msg, address)).start()
 
     # Função que permite fazer o reenvio do vídeo para os vizinhos cujas interfaces estejam ativas

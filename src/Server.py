@@ -18,7 +18,7 @@ class Server:
         self.bootstrap_server = BootstrapService(self.config_file)  # porta 2000
         self.running = True
         self.lock = threading.Lock()
-        self.filename = None
+        self.filename = "movie.Mjpeg"  # Default video file for testing
         self.get_neighbours()
 
     def get_neighbours(self):
@@ -28,8 +28,8 @@ class Server:
             print("Server neighbours:", self.neighbours)
 
     def request_video_processing(self, s: socket.socket, msg: bytes, addr: tuple):
-        print("Received a video processing request:", msg)
-        self.filename = msg.decode('utf-8').split(";")[0]
+        # This method is now bypassed for testing purposes
+        print("Video processing request bypassed. Starting streaming directly.")
         self.start_video_streaming(self.filename)
 
     def start_video_streaming(self, filename):
@@ -37,7 +37,7 @@ class Server:
             self.clientInfo['videoStream'] = VideoStream(filename)
             self.clientInfo['rtpPort'] = 25000
             self.clientInfo['rtpAddr'] = socket.gethostbyname(self.difusion_node)
-            print("Sending to Addr:", self.clientInfo['rtpAddr'], ":", self.clientInfo['rtpPort'])
+            print("Starting streaming to Addr:", self.clientInfo['rtpAddr'], ":", self.clientInfo['rtpPort'])
 
             # Create a new socket for RTP/UDP
             self.clientInfo["rtpSocket"] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -75,7 +75,6 @@ class Server:
         with self.lock:
             self.clientInfo['rtpSocket'].close()
         print("All done!")
-
 
     def make_rtp(self, payload, frameNbr):
         """RTP-packetize the video data."""
@@ -123,7 +122,7 @@ class Server:
         while self.running:
             packet = self.make_probe()
             for neighbour in self.neighbours:
-                print(f"Sending probes to: {neighbour}:{port}")
+                print(f"\033[93mSending probes to: {neighbour}:{port}\033[0m")
                 s.sendto(packet, (neighbour, port))
             time.sleep(20)
             self.probe_round += 1
