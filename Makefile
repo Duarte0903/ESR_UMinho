@@ -3,6 +3,9 @@ DISPLAY := :0
 SRC_DIR := src
 PYTHON := python3
 
+# Argumentos
+SERVER_ID ?= server1
+
 # Exec
 
 client:
@@ -12,6 +15,6 @@ node:
 	DISPLAY=$(DISPLAY)
 
 server:
-	DISPLAY=$(DISPLAY)
+	DISPLAY=$(DISPLAY) $(PYTHON) $(SRC_DIR)/Server.py $(SERVER_ID)
 
 clean:

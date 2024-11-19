@@ -1,11 +1,26 @@
 from random import randint
 import sys, traceback, threading, socket
 
-from stream.VideoStream import VideoStream
-from stream.RtpPacket import RtpPacket
+from utils.VideoStream import VideoStream
+from utils.RtpPacket import RtpPacket
 
 class ServerWorker:
-	SETUP = 'SETUP'
+	def __init__(self, clientSocket, clientInfo):
+		self.clientSocket = clientSocket
+		self.clientInfo = clientInfo
+
+		self.status = 1
+
+	def run(self):
+		print(f'Cliente {self.clientInfo[0]} conectado com sucesso')
+		return
+		while self.status == 1:
+			request = self.clientSocket.recv(1024).decode('utf-8').split(' ')
+
+			'''Handle aos pedidos'''
+
+	
+	'''SETUP = 'SETUP'
 	PLAY = 'PLAY'
 	PAUSE = 'PAUSE'
 	TEARDOWN = 'TEARDOWN'
@@ -158,4 +173,4 @@ class ServerWorker:
 		elif code == self.FILE_NOT_FOUND_404:
 			print("404 NOT FOUND")
 		elif code == self.CON_ERR_500:
-			print("500 CONNECTION ERROR")
+			print("500 CONNECTION ERROR")'''

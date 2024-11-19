@@ -3,19 +3,24 @@ import threading
 import time
 import json
 import sys
-from VideoStream import VideoStream
-from RtpPacket import RtpPacket
-from bootstrap import BootstrapService
+import os
 
-class Server:
-    def __init__(self, server_id: str, config_file: str = "../topologias/top3_config.json"):
+from utils.VideoStream import VideoStream
+from utils.RtpPacket import RtpPacket
+import utils.bootstrap as Bootstrapper
+from ServerWorker import ServerWorker
+
+import utils.ports as Portas
+
+'''class Server:
+    def __init__(self, server_id: str, config_file: str = "topologias/top3_config.json"):
         self.id = server_id
         self.config_file = config_file
         self.neighbours = []
         self.probe_round = 0
         self.difusion_node = "10.0.10.1"
         self.clientInfo = {}
-        self.bootstrap_server = BootstrapService(self.config_file)  # porta 2000
+        self.bootstrap_server = BootstrapService(self.config_file, Portas.BOOTSTRAP)  # porta 2000
         self.running = True
         self.lock = threading.Lock()
         self.filename = "movie.Mjpeg"  # Default video file for testing
@@ -95,7 +100,7 @@ class Server:
 
     def request_video_service(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        port = 5000
+        port = Portas.SERVER
         s.bind(('', port))
         print(f"Listening on port: {port}")
 
@@ -151,7 +156,57 @@ def main():
     server = Server(server_id)
     try:
         server.run()
-        while True:
+        while True: 
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Stopping server...")
+        server.stop()'''
+
+class Server:
+    def __init__(self, server_id: str):
+        self.id = server_id
+        self.serverSocket = None
+
+        self.videos = self.loadVideos()
+
+        self.neighbours = Bootstrapper.get_neighbours_server(self.id)
+
+        self.status = 1
+
+    def loadVideos(self):
+        videos = {}
+        with os.scandir("videos") as video_dir:
+            for video_file in video_dir:
+                videos[video_file.name] = VideoStream(video_file.name)
+
+        return videos
+
+    def run(self):
+        self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.serverSocket.bind(('', Portas.SERVER))
+        self.serverSocket.listen()
+        
+        while self.status == 1:
+            clientSocket, (addr, port) = self.serverSocket.accept()
+            worker = ServerWorker(clientSocket, (addr, port))
+            threading.Thread(worker.run()).start()
+
+    def stop(self):
+        self.status = 0
+        self.serverSocket.close()
+        print("Server closed")
+
+def main():
+    if len(sys.argv) != 2:
+        print("[Usage: python3 server.py <server_id>]")
+        print("  <server_id>: Unique identifier for the server.")
+        sys.exit(1)
+
+    server_id = sys.argv[1]
+    server = Server(server_id)
+    try:
+        server.run()
+        while True: 
             time.sleep(1)
     except KeyboardInterrupt:
         print("Stopping server...")
