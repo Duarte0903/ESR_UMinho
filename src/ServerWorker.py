@@ -1,24 +1,35 @@
 from random import randint
-import sys, traceback, threading, socket
+import sys, traceback, threading, socket, struct
 
 from utils.VideoStream import VideoStream
 from utils.RtpPacket import RtpPacket
 
+import utils.messages as Messages
+
 class ServerWorker:
-	def __init__(self, clientSocket, clientInfo):
+	def __init__(self, clientSocket, clientInfo, manager):
 		self.clientSocket = clientSocket
 		self.clientInfo = clientInfo
+
+		self.manager = manager
 
 		self.status = 1
 
 	def run(self):
 		print(f'Cliente {self.clientInfo[0]} conectado com sucesso')
-		return
 		while self.status == 1:
-			request = self.clientSocket.recv(1024).decode('utf-8').split(' ')
+			request = self.clientSocket.recv(1024).decode('utf-8')
 
-			'''Handle aos pedidos'''
+			# Handle de perdas de conexão
+			if not request:
+				print(f'Cliente {self.clientInfo[0]} desconectado inesperadamente')
+				return
+			
+			request_tokens = request.split(' ')
+			if request_tokens[1] == Messages.CHECK_VIDEO:
+				self.clientSocket.send(struct.pack('?', self.manager.checkVideo(request_tokens[2])))
 
+		print(f'Cliente {self.clientInfo[0]} desconectado com sucesso')
 	
 	'''SETUP = 'SETUP'
 	PLAY = 'PLAY'

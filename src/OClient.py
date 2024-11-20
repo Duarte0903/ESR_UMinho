@@ -2,11 +2,12 @@ from tkinter import *
 import tkinter.messagebox as tkMessageBox
 from PIL import Image, ImageTk
 
-import sys, socket
+import sys, socket, struct
 
 import utils.bootstrap as Bootstrapper
 import utils.aux as Aux
 import utils.ports as Portas
+import utils.messages as Messages
 
 class OClient:
     def __init__(self):
@@ -84,7 +85,11 @@ class OClient:
         pass
 
     def checkVideo(self, video_requested):
-        return False
+        self.tcpSocket.sendall(Messages.check_video(video_requested).encode('utf-8'))
+
+        response = self.tcpSocket.recv(1)
+
+        return struct.unpack('?', response)[0]
 
     def start(self):
         try:

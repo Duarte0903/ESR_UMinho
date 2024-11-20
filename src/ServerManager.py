@@ -18,3 +18,6 @@ class ServerManager:
                 videos[video_file.name] = VideoStream(video_file.name)
 
         return videos
+
+    def checkVideo(self, video: str):
+        return video in self.videos

@@ -180,7 +180,7 @@ class Server:
         
         while self.status == 1:
             clientSocket, (addr, port) = self.serverSocket.accept()
-            worker = ServerWorker(clientSocket, (addr, port))
+            worker = ServerWorker(clientSocket, (addr, port), self.manager)
             threading.Thread(worker.run()).start()
 
     def stop(self):
