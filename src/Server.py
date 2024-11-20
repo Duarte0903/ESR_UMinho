@@ -7,8 +7,8 @@ import os
 
 from utils.VideoStream import VideoStream
 from utils.RtpPacket import RtpPacket
-import utils.bootstrap as Bootstrapper
 from ServerWorker import ServerWorker
+from ServerManager import ServerManager
 
 import utils.ports as Portas
 
@@ -167,24 +167,16 @@ class Server:
         self.id = server_id
         self.serverSocket = None
 
-        self.videos = self.loadVideos()
-
-        self.neighbours = Bootstrapper.get_neighbours_server(self.id)
+        self.manager = None
 
         self.status = 1
-
-    def loadVideos(self):
-        videos = {}
-        with os.scandir("videos") as video_dir:
-            for video_file in video_dir:
-                videos[video_file.name] = VideoStream(video_file.name)
-
-        return videos
 
     def run(self):
         self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serverSocket.bind(('', Portas.SERVER))
         self.serverSocket.listen()
+
+        self.manager = ServerManager(self.id)
         
         while self.status == 1:
             clientSocket, (addr, port) = self.serverSocket.accept()

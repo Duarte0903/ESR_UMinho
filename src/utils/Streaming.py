@@ -1,7 +1,20 @@
 class Streaming:
-    def __init__(self):
+    def __init__(self, video):
+        self.video = video
+
         self.usersConnected = 1
 
-    def setFrame(self):
-        while self.usersConnected > 0:
-            pass
+        self.lastFrameSize = 0
+        self.lastFrame = b''
+
+    def setFrame(self, frameSize, frame):
+        self.lastFrameSize = frameSize
+        self.lastFrame = frame
+
+    def getFrame(self):
+        return (self.lastFrameSize, self.frame)
+
+    def run(self):
+        while this.usersConnected > 0:
+
+        pass
