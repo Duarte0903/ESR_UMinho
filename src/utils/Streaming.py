@@ -1,8 +1,10 @@
+import time
+
 class Streaming:
     def __init__(self, video):
         self.video = video
 
-        self.usersConnected = 1
+        self.viewers = 1
 
         self.lastFrameSize = 0
         self.lastFrame = b''
@@ -12,9 +14,16 @@ class Streaming:
         self.lastFrame = frame
 
     def getFrame(self):
-        return (self.lastFrameSize, self.frame)
+        return (self.lastFrameSize, self.lastFrame)
+
+    def connectUser(self):
+	    self.viewers += 1
+
+    def disconnectUser(self):
+        self.viewers -= 1
 
     def run(self):
-        while this.usersConnected > 0:
+        while self.viewers > 0:
+            self.lastFrameSize, self.lastFrame = self.video.nextFrame()
 
-        pass
+            time.sleep(0.04)

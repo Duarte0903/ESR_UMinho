@@ -2,12 +2,13 @@ from tkinter import *
 import tkinter.messagebox as tkMessageBox
 from PIL import Image, ImageTk
 
-import sys, socket, struct
+import sys, socket, struct, threading, io, time
 
 import utils.bootstrap as Bootstrapper
 import utils.aux as Aux
 import utils.ports as Portas
 import utils.messages as Messages
+from utils.RtpPacket import RtpPacket
 
 class OClient:
     def __init__(self):
@@ -33,9 +34,10 @@ class OClient:
         self.window.title("Deloitte Tube")
         self.window.geometry("600x400")  # Define dimensões iniciais da janela
         self.window.resizable(False, False)  # Evita redimensionamento
+        self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         # Frame para o vídeo
-        self.videoFrame = Label(self.window, bg="black", width=80, height=20)
+        self.videoFrame = Label(self.window, bg="black", width=600, height=350)
         self.videoFrame.pack(pady=1)
 
         # Frame para os botões
@@ -51,12 +53,9 @@ class OClient:
         self.stopButton = Button(buttonFrame, text="Stop", width=10, command=self.stop)
         self.stopButton.pack(side=LEFT, padx=5)
 
-        # Iniciar o loop da interface
-        self.window.mainloop()
-
     # Funções dos botões
     def play(self):
-        if not self.playing:
+        if self.pause:
             self.pause = False
 
     def pause_video(self):
@@ -66,23 +65,64 @@ class OClient:
     def stop(self):
         if self.playing:
             self.playing = False
+            self.window.destroy()
+            self.window = None
 
-    # Função para exibir um frame de vídeo (placeholder)
-    def update_video_frame(self, image_path=None):
-        if image_path:
+    def on_closing(self):
+        self.stop()
+
+    def disconnect(self):
+        self.tcpSocket.sendall(Messages.disconnectMessage().encode('utf-8'))
+
+    def update_video_frame(self, frame_bytes=None):
+        if frame_bytes:
             try:
-                img = Image.open(image_path)
-                img = img.resize((400, 300))  # Redimensionar para caber no frame
-                img_tk = ImageTk.PhotoImage(img)
+                # Carregar a imagem diretamente dos bytes
+                img = Image.open(io.BytesIO(frame_bytes))
+                
+                # Redimensionar a imagem para caber no frame da interface (opcional)
+                img = img.resize((600, 350))  # Ajuste os valores conforme necessário
+                
+                # Converter a imagem para o formato PhotoImage do Tkinter
+                if self.window is not None:
+                    img_tk = ImageTk.PhotoImage(img)
+                
+                # Atualizar o widget da interface com a nova imagem
                 self.videoFrame.configure(image=img_tk, text="")
                 self.videoFrame.image = img_tk
             except Exception as e:
-                tkMessageBox.showerror("Erro", f"Não foi possível carregar o frame: {e}")
+                pass
         else:
+            # Mostrar mensagem padrão caso não haja frame disponível
             self.videoFrame.config(text="Sem vídeo disponível.", image="")
 
-    def requestVideo(self):
-        pass
+    def requestVideo(self, video_requested):
+        self.tcpSocket.sendall(Messages.readyMessage(video_requested).encode('utf-8'))
+        self.recieveFrame()
+
+    def recieveFrame(self):
+        self.playing = True
+        while self.playing:
+            while self.pause:
+                time.sleep(0.04)
+            try:
+                # Receber dados do servidor via socket UDP
+                packet, server_address = self.udpSocket.recvfrom(65535)
+                
+                # Criar uma instância do pacote RTP
+                rtp_packet = RtpPacket()
+                rtp_packet.decode(packet)
+                
+                # Obter o payload (frame) do pacote RTP
+                frame = rtp_packet.getPayload()
+                
+                # Retornar o frame recebido
+
+                self.update_video_frame(frame)
+            except Exception as e:
+                print(f"Erro ao receber frame: {e}")
+
+        self.disconnect()
 
     def checkVideo(self, video_requested):
         self.tcpSocket.sendall(Messages.check_video(video_requested).encode('utf-8'))
@@ -112,7 +152,8 @@ class OClient:
 
         if self.checkVideo(video_requested):
             self.setup()
-            self.requestVideo()
+            threading.Thread(target=self.requestVideo, args=(video_requested,)).start()
+            self.window.mainloop()
         else:
             print("Video não encontrado no sistema. A fechar...")
             sys.exit(0)

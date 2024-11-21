@@ -6,6 +6,9 @@ class VideoStream:
 		except:
 			raise IOError
 		self.frameNum = 0
+
+	def get_filename(self):
+		return self.filename
 		
 	def nextFrame(self):
 		"""Get next frame."""
@@ -16,7 +19,14 @@ class VideoStream:
 			# Read the current frame
 			data = self.file.read(framelength)
 			self.frameNum += 1
-		return data
+		else:
+			self.file.close()
+			self.file = open(f'videos/{self.filename}', 'rb')
+
+			self.frameNum = 0
+
+			return self.nextFrame()
+		return framelength, data
 		
 	def frameNbr(self):
 		"""Get frame number."""

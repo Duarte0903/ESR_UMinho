@@ -173,6 +173,7 @@ class Server:
 
     def run(self):
         self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.serverSocket.bind(('', Portas.SERVER))
         self.serverSocket.listen()
 
@@ -181,7 +182,7 @@ class Server:
         while self.status == 1:
             clientSocket, (addr, port) = self.serverSocket.accept()
             worker = ServerWorker(clientSocket, (addr, port), self.manager)
-            threading.Thread(worker.run()).start()
+            threading.Thread(target=worker.run, args=()).start()
 
     def stop(self):
         self.status = 0
