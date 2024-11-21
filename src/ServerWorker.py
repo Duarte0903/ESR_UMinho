@@ -12,6 +12,8 @@ class ServerWorker:
 		self.clientSocket = clientSocket
 		self.clientInfo = clientInfo
 
+		self.clientUDPPort = 0
+
 		self.udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 		self.manager = manager
@@ -55,7 +57,7 @@ class ServerWorker:
 
 			# Enviar o pacote RTP através do socket UDP
 			try:
-				self.udpSocket.sendto(rtp_packet.getPacket(), (self.clientInfo[0], Portas.CLIENTEUDP))
+				self.udpSocket.sendto(rtp_packet.getPacket(), (self.clientInfo[0], self.clientUDPPort))
 			except Exception as e:
 				print(f"Erro ao enviar frame: {e}")
 
@@ -81,6 +83,7 @@ class ServerWorker:
 
 			elif request_tokens[1] == Messages.READY:
 				self.requested_video = request_tokens[2]
+				self.clientUDPPort = int(request_tokens[3])
 				threading.Thread(target=self.startStream, args=()).start()
 			
 			elif request_tokens[1] == Messages.DISCONNECT:

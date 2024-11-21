@@ -97,7 +97,7 @@ class OClient:
             self.videoFrame.config(text="Sem vídeo disponível.", image="")
 
     def requestVideo(self, video_requested):
-        self.tcpSocket.sendall(Messages.readyMessage(video_requested).encode('utf-8'))
+        self.tcpSocket.sendall(Messages.readyMessage(video_requested, self.udpSocket.getsockname()[1]).encode('utf-8'))
         self.recieveFrame()
 
     def recieveFrame(self):
@@ -139,7 +139,7 @@ class OClient:
             self.tcpSocket.connect(("10.0.10.10", Portas.SERVER)) # Hard coded para o servidor para já depois meto os vizinhos a funcionar com RTT
 
             self.udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.udpSocket.bind(('', Portas.CLIENTEUDP))
+            self.udpSocket.bind(('', Portas.generateClientUDPPort()))
         except:
             print("Erro a conectar-se")
             if self.tcpSocket:

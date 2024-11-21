@@ -39,14 +39,14 @@ class ServerManager:
 
             threading.Thread(target=self.lambdaStreamInit, args=(video, videoObj, stream)).start()
 
-            time.sleep(0.01)
+            time.sleep(0.01) # Cooldown para dar tempo de inicializar a stream na base de dados
         else:
             self.connectUser(videoObj)
 
     def getFrame(self, video: str):
         return self.streamingCurrently[self.videos[video]].getFrame()
 
-    def connectUser(videoObj):
+    def connectUser(self, videoObj):
         self.streamingCurrently[videoObj].connectUser()
 
     def disconnectUser(self, video: str):
