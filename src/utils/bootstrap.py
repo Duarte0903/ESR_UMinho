@@ -9,15 +9,14 @@ def get_neighbours(ip: str):
         with open(config_file) as f:
             config = json.load(f)
             response = config['nodes'].get(ip, []) # Se o IP não existir, devolve uma lista vazia
-            ttl = config.get("TTL", 6)  # TTL fica a 6 se não for especificado
             print("Neighbours for IP", ip, ":", response)
-            return (response, ttl)
+            return response
     except FileNotFoundError:
         print(f"Config file {config_file} not found.")
-        return ([], 6)
+        return []
     except json.JSONDecodeError:
         print("Error decoding JSON in the configuration file.")
-        return ([], 6)
+        return []
 
 def get_neighbours_server(id: str):
     with open(config_file) as f:

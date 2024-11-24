@@ -78,6 +78,9 @@ class ServerWorker:
 				return
 			
 			request_tokens = request.split(' ')
+			if self.manager.checkViewedMessage(int(request_tokens[0]), request_tokens):
+				continue
+				
 			if request_tokens[1] == Messages.CHECK_VIDEO:
 				self.clientSocket.send(struct.pack('?', self.manager.checkVideo(request_tokens[2])))
 

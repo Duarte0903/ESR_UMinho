@@ -12,7 +12,7 @@ client:
 	DISPLAY=$(DISPLAY) $(PYTHON) $(SRC_DIR)/OClient.py
 
 node:
-	DISPLAY=$(DISPLAY)
+	DISPLAY=$(DISPLAY) $(PYTHON) $(SRC_DIR)/ONode.py
 
 server:
 	DISPLAY=$(DISPLAY) $(PYTHON) $(SRC_DIR)/Server.py $(SERVER_ID)

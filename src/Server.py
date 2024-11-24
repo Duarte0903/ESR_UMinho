@@ -8,7 +8,7 @@ import os
 from utils.VideoStream import VideoStream
 from utils.RtpPacket import RtpPacket
 from ServerWorker import ServerWorker
-from ServerManager import ServerManager
+from ServerDatabase import ServerDatabase
 
 import utils.ports as Portas
 
@@ -169,7 +169,7 @@ class Server:
 
         self.manager = None
 
-        self.status = 1
+        self.status = True
 
     def run(self):
         self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -177,15 +177,15 @@ class Server:
         self.serverSocket.bind(('', Portas.SERVER))
         self.serverSocket.listen()
 
-        self.manager = ServerManager(self.id)
+        self.manager = ServerDatabase(self.id)
         
-        while self.status == 1:
+        while self.status:
             clientSocket, (addr, port) = self.serverSocket.accept()
             worker = ServerWorker(clientSocket, (addr, port), self.manager)
             threading.Thread(target=worker.run, args=()).start()
 
     def stop(self):
-        self.status = 0
+        self.status = False
         self.serverSocket.close()
         print("Server closed")
 
@@ -204,6 +204,7 @@ def main():
     except KeyboardInterrupt:
         print("Stopping server...")
         server.stop()
+        sys.exit(0)
 
 if __name__ == '__main__':
     main()

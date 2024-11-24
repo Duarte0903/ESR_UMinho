@@ -1,16 +1,38 @@
-import os, threading, time
+import os, threading, time, socket
 
 from utils.VideoStream import VideoStream
 from utils.Streaming import Streaming
-import utils.bootstrap as Bootstrapper
 
-class ServerManager:    
+import utils.bootstrap as Bootstrapper
+import utils.ports as Portas
+import utils.messages as Messages
+
+class ServerDatabase:    
     def __init__(self, server_id):
         self.id = server_id
         self.neighbours = Bootstrapper.get_neighbours_server(self.id)
 
         self.videos = self.loadVideos()
-        self.streamingCurrently = {}
+        self.videosStreaming = {}
+
+        self.sendProbes()
+
+        self.viewedMessages = {}
+
+    def sendProbes(self):
+        for neighbour in self.neighbours:
+            probingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                probingSocket.connect((neighbour, Portas.NODO))
+            except ConnectionRefusedError:
+                probingSocket.close()
+                continue
+
+            probingSocket.sendall(Messages.probeRequest(0).encode('utf-8'))
+
+            probingSocket.sendall(Messages.disconnectMessage().encode('utf-8'))
+
+            probingSocket.close()
 
     def loadVideos(self):
         videos = {}
@@ -28,14 +50,14 @@ class ServerManager:
         streamThread.start()
 
         streamThread.join()
-        del self.streamingCurrently[videoObj]
+        del self.videosStreaming[videoObj]
         print(f'Stream do vídeo {video} fechada')
 
     def enableStream(self, video: str):
         videoObj = self.videos[video]
-        if videoObj not in self.streamingCurrently:
+        if videoObj not in self.videosStreaming:
             stream = Streaming(videoObj)
-            self.streamingCurrently[videoObj] = stream
+            self.videosStreaming[videoObj] = stream
 
             threading.Thread(target=self.lambdaStreamInit, args=(video, videoObj, stream)).start()
 
@@ -44,10 +66,17 @@ class ServerManager:
             self.connectUser(videoObj)
 
     def getFrame(self, video: str):
-        return self.streamingCurrently[self.videos[video]].getFrame()
+        return self.videosStreaming[self.videos[video]].getFrame()
 
     def connectUser(self, videoObj):
-        self.streamingCurrently[videoObj].connectUser()
+        self.videosStreaming[videoObj].connectUser()
 
     def disconnectUser(self, video: str):
-        self.streamingCurrently[self.videos[video]].disconnectUser()
+        self.videosStreaming[self.videos[video]].disconnectUser()
+
+    def checkViewedMessage(self, id: int, message):
+        if id in self.viewedMessages.keys():
+            return True
+        else:
+            self.viewedMessages[id] = message
+            return False
