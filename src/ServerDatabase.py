@@ -20,6 +20,7 @@ class ServerDatabase:
         self.viewedMessages = {}
 
     def sendProbes(self):
+        probeMessage = Messages.probeRequest(0).encode('utf-8')
         for neighbour in self.neighbours:
             probingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
@@ -28,7 +29,9 @@ class ServerDatabase:
                 probingSocket.close()
                 continue
 
-            probingSocket.sendall(Messages.probeRequest(0).encode('utf-8'))
+            probingSocket.sendall(probeMessage)
+
+            time.sleep(0.01)
 
             probingSocket.sendall(Messages.disconnectMessage().encode('utf-8'))
 

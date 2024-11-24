@@ -1,4 +1,4 @@
-import socket
+import socket, time
 
 import utils.bootstrap as Bootstrapper
 import utils.aux as Aux
@@ -21,6 +21,8 @@ class NodeDatabase:
     def handleProbing(self, currentTTL, sender):
         self.TTL = int(currentTTL[2]) + 1
 
+        probeMessage = Messages.probeRequest(self.TTL, currentTTL[0]).encode('utf-8')
+
         for neighbour in self.neighbours:
             if neighbour == sender:
                 continue
@@ -32,7 +34,9 @@ class NodeDatabase:
                 probingSocket.close()
                 continue
 
-            probingSocket.sendall(Messages.probeRequest(self.TTL, currentTTL[0]).encode('utf-8'))
+            probingSocket.sendall(probeMessage)
+
+            time.sleep(0.01)
 
             probingSocket.sendall(Messages.disconnectMessage().encode('utf-8'))
 
