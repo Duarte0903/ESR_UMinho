@@ -8,6 +8,7 @@ import utils.messages as Messages
 class NodeDatabase:
     def __init__(self):
         self.neighbours = Bootstrapper.get_neighbours(Aux.get_local_address())
+        self.neighboursDelay = {}
 
         self.videosStreaming = {}
 
@@ -21,12 +22,15 @@ class NodeDatabase:
     def handleProbing(self, currentTTL, sender):
         self.TTL = int(currentTTL[2]) + 1
 
-        probeMessage = Messages.probeRequest(self.TTL, currentTTL[0]).encode('utf-8')
+        if sender not in self.neighboursDelay.keys():
+            self.neighboursDelay[sender] = time.time() - float(currentTTL[3])
+
+        if self.checkViewedMessage(int(currentTTL[0]), currentTTL):
+            return
+
+        probeMessage = Messages.probeRequest(self.TTL, time.time(), currentTTL[0]).encode('utf-8')
 
         for neighbour in self.neighbours:
-            if neighbour == sender:
-                continue
-
             probingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
                 probingSocket.connect((neighbour, Portas.NODO))
@@ -36,7 +40,7 @@ class NodeDatabase:
 
             probingSocket.sendall(probeMessage)
 
-            time.sleep(0.01)
+            time.sleep(0.03)
 
             probingSocket.sendall(Messages.disconnectMessage().encode('utf-8'))
 

@@ -39,14 +39,14 @@ class NodeWorker:
                 return
                 
             request_tokens = request.split(' ')
-            if self.manager.checkViewedMessage(int(request_tokens[0]), request_tokens):
+            if request_tokens[1] == Messages.PROBING:
+                self.manager.handleProbing(request_tokens, self.clientInfo[0])
+
+            elif self.manager.checkViewedMessage(int(request_tokens[0]), request_tokens):
                 continue
 
-            if request_tokens[1] == Messages.CHECK_VIDEO:
+            elif request_tokens[1] == Messages.CHECK_VIDEO:
                 self.clientSocket.send(struct.pack('?', self.checkVideoOnSystem()))
-                
-            elif request_tokens[1] == Messages.PROBING:
-                self.manager.handleProbing(request_tokens, self.clientInfo[0])
                 
             elif request_tokens[1] == Messages.READY:
                 self.requested_video = request_tokens[2]

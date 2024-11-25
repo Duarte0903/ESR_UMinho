@@ -16,5 +16,5 @@ def readyMessage(video: str, port: int):
 def disconnectMessage():
     return f'{random.randrange(1, 100000)} {DISCONNECT}'
 
-def probeRequest(currentTTL: int, id = 0):
-    return f'{random.randrange(1, 100000) if id == 0 else id} {PROBING} {currentTTL}'
+def probeRequest(currentTTL: int, timestamp: float, id = 0):
+    return f'{random.randrange(1, 100000) if id == 0 else id} {PROBING} {currentTTL} {timestamp}'

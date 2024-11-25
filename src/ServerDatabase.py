@@ -20,7 +20,7 @@ class ServerDatabase:
         self.viewedMessages = {}
 
     def sendProbes(self):
-        probeMessage = Messages.probeRequest(0).encode('utf-8')
+        probeMessage = Messages.probeRequest(0, time.time()).encode('utf-8')
         for neighbour in self.neighbours:
             probingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
