@@ -52,6 +52,8 @@ class ServerDatabase:
         streamThread = threading.Thread(target=stream.run, args=())
         streamThread.start()
 
+        print(f'Stream do vídeo {video} iniciada')
+
         streamThread.join()
         del self.videosStreaming[videoObj]
         print(f'Stream do vídeo {video} fechada')
@@ -63,10 +65,9 @@ class ServerDatabase:
             self.videosStreaming[videoObj] = stream
 
             threading.Thread(target=self.lambdaStreamInit, args=(video, videoObj, stream)).start()
-
-            time.sleep(0.01) # Cooldown para dar tempo de inicializar a stream na base de dados
         else:
             self.connectUser(videoObj)
+        return True
 
     def getFrame(self, video: str):
         return self.videosStreaming[self.videos[video]].getFrame()

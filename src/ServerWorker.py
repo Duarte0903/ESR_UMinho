@@ -24,7 +24,7 @@ class ServerWorker:
 		self.streaming = True
 
 	def startStream(self):
-		self.manager.enableStream(self.requested_video)
+		self.clientSocket.send(struct.pack('?', self.manager.enableStream(self.requested_video)))
 		while self.streaming:
 			frame_size, frame = self.manager.getFrame(self.requested_video)
 
@@ -79,8 +79,9 @@ class ServerWorker:
 			
 			request_tokens = request.split(' ')
 			if self.manager.checkViewedMessage(int(request_tokens[0]), request_tokens):
+				self.clientSocket.send(struct.pack('?', False))
 				continue
-				
+
 			if request_tokens[1] == Messages.CHECK_VIDEO:
 				self.clientSocket.send(struct.pack('?', self.manager.checkVideo(request_tokens[2])))
 
