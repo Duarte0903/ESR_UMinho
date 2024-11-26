@@ -22,6 +22,7 @@ class OClient:
         # Atributos da interface
         self.window = None
 
+        self.buttonFrame = None
         self.playButton = None
         self.pauseButton = None
         self.stopButton = None
@@ -41,16 +42,16 @@ class OClient:
         self.videoFrame.pack(pady=1)
 
         # Frame para os botões
-        buttonFrame = Frame(self.window)
-        buttonFrame.pack(pady=10)
+        self.buttonFrame = Frame(self.window)
+        self.buttonFrame.pack(pady=10)
 
-        self.playButton = Button(buttonFrame, text="Play", width=10, command=self.play)
+        self.playButton = Button(self.buttonFrame, text="Play", width=10, command=self.play)
         self.playButton.pack(side=LEFT, padx=5)
 
-        self.pauseButton = Button(buttonFrame, text="Pause", width=10, command=self.pause_video)
+        self.pauseButton = Button(self.buttonFrame, text="Pause", width=10, command=self.pause_video)
         self.pauseButton.pack(side=LEFT, padx=5)
 
-        self.stopButton = Button(buttonFrame, text="Stop", width=10, command=self.stop)
+        self.stopButton = Button(self.buttonFrame, text="Stop", width=10, command=self.stop)
         self.stopButton.pack(side=LEFT, padx=5)
 
     # Funções dos botões
@@ -63,10 +64,21 @@ class OClient:
             self.pause = True
 
     def stop(self):
-        if self.playing:
-            self.playing = False
+        if self.window:
             self.window.destroy()
             self.window = None
+            
+        self.playing = False
+        self.pause = True
+                
+        if self.tcpSocket:
+            try:
+                self.disconnect()
+                self.tcpSocket.close()
+            except Exception as e:
+                print(f"Erro ao fechar socket TCP: {e}")
+                
+        sys.exit(0)
 
     def on_closing(self):
         self.stop()
@@ -103,7 +115,7 @@ class OClient:
     def recieveFrame(self):
         self.playing = True
         while self.playing:
-            while self.pause:
+            while self.pause and self.playing:
                 time.sleep(0.04)
             try:
                 # Receber dados do servidor via socket UDP
@@ -116,13 +128,15 @@ class OClient:
                 # Obter o payload (frame) do pacote RTP
                 frame = rtp_packet.getPayload()
                 
-                # Retornar o frame recebido
-
+                # Atualizar a interface com o frame recebido
                 self.update_video_frame(frame)
+            except socket.timeout:
+                # Se o socket estiver fechado, interrompe o loop
+                if not self.playing:
+                    self.udpSocket.close()
+                    break
             except Exception as e:
                 print(f"Erro ao receber frame: {e}")
-
-        self.disconnect()
 
     def checkVideo(self, video_requested):
         self.tcpSocket.sendall(Messages.check_video(video_requested).encode('utf-8'))
@@ -139,6 +153,7 @@ class OClient:
             self.tcpSocket.connect(("10.0.3.2", Portas.SERVER)) # Hard coded para o servidor para já depois meto os vizinhos a funcionar com RTT
 
             self.udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.udpSocket.settimeout(0.6)
             self.udpSocket.bind(('', Portas.generateClientUDPPort()))
         except:
             print("Erro a conectar-se")

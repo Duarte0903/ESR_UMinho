@@ -25,6 +25,7 @@ class ServerWorker:
 
 	def startStream(self):
 		self.clientSocket.send(struct.pack('?', self.manager.enableStream(self.requested_video)))
+		errorCounter = 0
 		while self.streaming:
 			frame_size, frame = self.manager.getFrame(self.requested_video)
 
@@ -32,7 +33,11 @@ class ServerWorker:
 
 			# Verificar se o frame existe (fim do vídeo)
 			if not frame:
-				print("Fim do stream.")
+				errorCounter += 1
+				time.sleep(0.03)
+				if errorCounter > 10:
+					print("Erro ao obter um frame após 10 tentativas. A fechar...")
+					break
 				continue
 
 			seqnum = 0

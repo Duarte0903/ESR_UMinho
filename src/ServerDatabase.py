@@ -58,6 +58,8 @@ class ServerDatabase:
         del self.videosStreaming[videoObj]
         print(f'Stream do vídeo {video} fechada')
 
+        videoObj.resetVideo()
+
     def enableStream(self, video: str):
         videoObj = self.videos[video]
         if videoObj not in self.videosStreaming:

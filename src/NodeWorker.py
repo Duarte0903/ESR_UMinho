@@ -21,7 +21,10 @@ class NodeWorker:
         self.streaming = True
 
     def startStream(self, original_request):
-        self.clientSocket.send(struct.pack('?', self.manager.enableStream(self.requested_video, original_request, self.clientUDPPort)))
+        check = self.manager.enableStream(self.requested_video, original_request, self.clientUDPPort)
+        self.clientSocket.send(struct.pack('?', check))
+        if check is not True:
+            return
         errorCounter = 0
         while self.streaming:
             frame_size, frame = self.manager.getFrame(self.requested_video)
@@ -31,7 +34,8 @@ class NodeWorker:
             # Verificar se o frame existe (fim do vídeo)
             if not frame:
                 errorCounter += 1
-                if errorCounter == 10:
+                time.sleep(0.1)
+                if errorCounter > 10:
                     print("Erro ao obter um frame após 10 tentativas. A fechar...")
                     break
             
@@ -76,7 +80,12 @@ class NodeWorker:
     def run(self):
         print(f'Cliente {self.clientInfo[0]} conectado com sucesso')
         while self.status:
-            request = self.clientSocket.recv(1024).decode('utf-8')
+            try:
+                request = self.clientSocket.recv(1024).decode('utf-8')
+            except Exception:
+                self.streaming = False
+                self.status = False
+                continue
 
             # Handle de perdas de conexão
             if not request:

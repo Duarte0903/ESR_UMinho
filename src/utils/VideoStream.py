@@ -9,6 +9,12 @@ class VideoStream:
 
 	def get_filename(self):
 		return self.filename
+
+	def resetVideo(self):
+		self.file.close()
+		self.file = open(f'videos/{self.filename}', 'rb')
+		
+		self.frameNum = 0
 		
 	def nextFrame(self):
 		"""Get next frame."""
@@ -20,10 +26,7 @@ class VideoStream:
 			data = self.file.read(framelength)
 			self.frameNum += 1
 		else:
-			self.file.close()
-			self.file = open(f'videos/{self.filename}', 'rb')
-
-			self.frameNum = 0
+			self.resetVideo()
 
 			return self.nextFrame()
 		return framelength, data
