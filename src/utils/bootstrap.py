@@ -23,6 +23,15 @@ def get_neighbours_server(id: str):
         config = json.load(f)
         return config['servers'].get(id, [])
 
+def getHostname(ip: str):
+    with open(config_file) as f:
+        config = json.load(f)
+        hosts = config["hostnames"]
+        for host in hosts:
+            if ip in hosts[host]:
+                return host
+
+    return None
 
 '''class BootstrapService:
     def __init__(self, config_file: str, port: int):

@@ -4,6 +4,7 @@ import utils.bootstrap as Bootstrapper
 import utils.aux as Aux
 import utils.ports as Portas
 import utils.messages as Messages
+import utils.updateVisualizer as UpdateVisualizer
 
 from utils.Streaming import Streaming
 
@@ -60,7 +61,7 @@ class NodeDatabase:
         aux.sendall(Messages.disconnectMessage().encode('utf-8'))
         aux.close()
 
-    def enableStream(self, video_requested: str, original_request: str, udpPort):
+    def enableStream(self, video_requested: str, original_request: str, udpPort, sender):
         if video_requested not in self.videosStreaming.keys():
             ordered_neighbours = sorted(self.neighboursDelay, key=lambda k: self.neighboursDelay[k])
 
@@ -83,9 +84,12 @@ class NodeDatabase:
 
                 threading.Thread(target=self.streamInit, args=(video_requested, stream, aux)).start()
 
+                UpdateVisualizer.update(Bootstrapper.getHostname(sender), Bootstrapper.getHostname(Aux.get_local_address()), 1)
+
                 return True
         else:
             self.connectUser(video_requested)
+            UpdateVisualizer.update(Bootstrapper.getHostname(sender), Bootstrapper.getHostname(Aux.get_local_address()), 1)
             return True
         return False
 
@@ -129,6 +133,7 @@ class NodeDatabase:
     def connectUser(self, video):
         self.videosStreaming[video].connectUser()
 
-    def disconnectUser(self, video):
+    def disconnectUser(self, video, sender):
         self.videosStreaming[video].disconnectUser()
+        UpdateVisualizer.update(Bootstrapper.getHostname(sender), Bootstrapper.getHostname(Aux.get_local_address()), 0)
 

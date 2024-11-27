@@ -21,7 +21,7 @@ class NodeWorker:
         self.streaming = True
 
     def startStream(self, original_request):
-        check = self.manager.enableStream(self.requested_video, original_request, self.clientUDPPort)
+        check = self.manager.enableStream(self.requested_video, original_request, self.clientUDPPort, self.clientInfo[0])
         self.clientSocket.send(struct.pack('?', check))
         if check is not True:
             return
@@ -67,7 +67,7 @@ class NodeWorker:
                 
             time.sleep(0.04)
             
-        self.manager.disconnectUser(self.requested_video)
+        self.manager.disconnectUser(self.requested_video, self.clientInfo[0])
 
     def checkVideoOnSystem(self, videoRequested: str):
         if self.manager.checkVideo(videoRequested):

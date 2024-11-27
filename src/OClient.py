@@ -150,7 +150,7 @@ class OClient:
             self.neighbours = Bootstrapper.get_neighbours(Aux.get_local_address())
 
             self.tcpSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.tcpSocket.connect(("10.0.3.2", Portas.SERVER)) # Hard coded para o servidor para já depois meto os vizinhos a funcionar com RTT
+            self.tcpSocket.connect((self.neighbours[0], Portas.SERVER)) # Hard coded para o servidor para já depois meto os vizinhos a funcionar com RTT
 
             self.udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.udpSocket.settimeout(0.6)

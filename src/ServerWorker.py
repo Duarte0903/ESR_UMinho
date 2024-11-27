@@ -24,7 +24,7 @@ class ServerWorker:
 		self.streaming = True
 
 	def startStream(self):
-		self.clientSocket.send(struct.pack('?', self.manager.enableStream(self.requested_video)))
+		self.clientSocket.send(struct.pack('?', self.manager.enableStream(self.requested_video, self.clientInfo[0])))
 		errorCounter = 0
 		while self.streaming:
 			frame_size, frame = self.manager.getFrame(self.requested_video)
@@ -68,7 +68,7 @@ class ServerWorker:
 
 			time.sleep(0.04)
 
-		self.manager.disconnectUser(self.requested_video)
+		self.manager.disconnectUser(self.requested_video, self.clientInfo[0])
 
 	def run(self):
 		print(f'Cliente {self.clientInfo[0]} conectado com sucesso')

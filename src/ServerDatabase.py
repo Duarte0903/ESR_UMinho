@@ -6,6 +6,8 @@ from utils.Streaming import Streaming
 import utils.bootstrap as Bootstrapper
 import utils.ports as Portas
 import utils.messages as Messages
+import utils.aux as Aux
+import utils.updateVisualizer as UpdateVisualizer
 
 class ServerDatabase:    
     def __init__(self, server_id):
@@ -60,15 +62,18 @@ class ServerDatabase:
 
         videoObj.resetVideo()
 
-    def enableStream(self, video: str):
+    def enableStream(self, video: str, sender):
         videoObj = self.videos[video]
         if videoObj not in self.videosStreaming:
             stream = Streaming(videoObj)
             self.videosStreaming[videoObj] = stream
 
             threading.Thread(target=self.lambdaStreamInit, args=(video, videoObj, stream)).start()
+
+            UpdateVisualizer.update(Bootstrapper.getHostname(sender), Bootstrapper.getHostname(Aux.get_local_address()), 1)
         else:
             self.connectUser(videoObj)
+            UpdateVisualizer.update(Bootstrapper.getHostname(sender), Bootstrapper.getHostname(Aux.get_local_address()), 1)
         return True
 
     def getFrame(self, video: str):
@@ -77,8 +82,9 @@ class ServerDatabase:
     def connectUser(self, videoObj):
         self.videosStreaming[videoObj].connectUser()
 
-    def disconnectUser(self, video: str):
+    def disconnectUser(self, video: str, sender):
         self.videosStreaming[self.videos[video]].disconnectUser()
+        UpdateVisualizer.update(Bootstrapper.getHostname(sender), Bootstrapper.getHostname(Aux.get_local_address()), 0)
 
     def checkViewedMessage(self, id: int, message):
         if id in self.viewedMessages.keys():
