@@ -63,7 +63,9 @@ class NodeDatabase:
 
     def enableStream(self, video_requested: str, original_request: str, udpPort, sender):
         if video_requested not in self.videosStreaming.keys():
-            ordered_neighbours = sorted(self.neighboursDelay, key=lambda k: self.neighboursDelay[k])
+            ordered_neighbours = sorted(sorted(self.neighboursDelay, key=lambda k: self.neighboursDelay[k][0]), key=lambda z: self.neighboursDelay[z][1])
+
+            # TODO: Talvez criar uma métrica composta com 3 fatores (saltos (30%), delay (com threshold - 20%) e stream disponivel(50%)) - Valores a ajustar
 
             for neighbour in ordered_neighbours:
                 aux = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -100,7 +102,7 @@ class NodeDatabase:
         self.TTL = int(currentTTL[2]) + 1
 
         if sender not in self.neighboursDelay.keys():
-            self.neighboursDelay[sender] = time.time() - float(currentTTL[3])
+            self.neighboursDelay[sender] = (time.time() - float(currentTTL[3]), int(currentTTL[2]))
 
         if self.checkViewedMessage(int(currentTTL[0]), currentTTL):
             return
