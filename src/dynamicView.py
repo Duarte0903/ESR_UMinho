@@ -1,3 +1,11 @@
+"""
+##############################################################
+# Programa: Overlay Network Visualizer
+# Descrição: Permite ver em tempo real o estado dos nodos de streaming numa rede, bem como os caminhos que uma stream está a fazer desde o servidor de streaming até ao cliente que pediu um conteúdo
+# Autor: Pedro Silva
+# Versão: 1.11
+##############################################################
+"""
 import tkinter as tk
 import socket
 import threading
