@@ -78,7 +78,7 @@ class NodeWorker:
         return False
 
     def run(self):
-        print(f'Cliente {self.clientInfo[0]} conectado com sucesso')
+        # print(f'Cliente {self.clientInfo[0]} conectado com sucesso')
         while self.status:
             try:
                 request = self.clientSocket.recv(1024).decode('utf-8')
@@ -115,4 +115,4 @@ class NodeWorker:
                 self.status = False
                 continue
                 
-        print(f'Cliente {self.clientInfo[0]} desconectado com sucesso')
+        # print(f'Cliente {self.clientInfo[0]} desconectado com sucesso')

@@ -63,13 +63,13 @@ class NodeDatabase:
 
     def enableStream(self, video_requested: str, original_request: str, udpPort, sender):
         if video_requested not in self.videosStreaming.keys():
-            ordered_neighbours = sorted(sorted(self.neighboursDelay, key=lambda k: self.neighboursDelay[k][0]), key=lambda z: self.neighboursDelay[z][1])
+            # ordered_neighbours = sorted(sorted(self.neighboursDelay, key=lambda k: self.neighboursDelay[k][1]), key=lambda z: self.neighboursDelay[z][0])
 
-            # TODO: Talvez criar uma métrica composta com 3 fatores (saltos (30%), delay (com threshold - 20%) e stream disponivel(50%)) - Valores a ajustar
+            ordered_neighbours = Aux.generate_metrics(self.neighboursDelay)
 
             for neighbour in ordered_neighbours:
                 aux = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                aux.connect((neighbour, Portas.NODO))
+                aux.connect((neighbour[0], Portas.NODO))
 
                 aux.sendall(original_request.encode('utf-8'))
 
@@ -101,13 +101,10 @@ class NodeDatabase:
     def handleProbing(self, currentTTL, sender):
         self.TTL = int(currentTTL[2]) + 1
 
-        if sender not in self.neighboursDelay.keys():
-            self.neighboursDelay[sender] = (time.time() - float(currentTTL[3]), int(currentTTL[2]))
+        self.neighboursDelay[sender] = (time.time() - float(currentTTL[3]), int(currentTTL[2]))
 
         if self.checkViewedMessage(int(currentTTL[0]), currentTTL):
             return
-
-        probeMessage = Messages.probeRequest(self.TTL, time.time(), currentTTL[0]).encode('utf-8')
 
         for neighbour in self.neighbours:
             probingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -116,6 +113,8 @@ class NodeDatabase:
             except ConnectionRefusedError:
                 probingSocket.close()
                 continue
+
+            probeMessage = Messages.probeRequest(self.TTL, time.time(), currentTTL[0]).encode('utf-8')
 
             probingSocket.sendall(probeMessage)
 

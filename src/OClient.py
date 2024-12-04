@@ -110,9 +110,9 @@ class OClient:
 
     def requestVideo(self, video_requested):
         self.tcpSocket.sendall(Messages.readyMessage(video_requested, self.udpSocket.getsockname()[1]).encode('utf-8'))
-        self.recieveFrame()
+        self.receiveFrame()
 
-    def recieveFrame(self):
+    def receiveFrame(self):
         self.playing = True
         while self.playing:
             while self.pause and self.playing:
@@ -150,7 +150,12 @@ class OClient:
             self.neighbours = Bootstrapper.get_neighbours(Aux.get_local_address())
 
             self.tcpSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.tcpSocket.connect((self.neighbours[0], Portas.SERVER)) # TODO: Verificar qual o melhor PoP
+            for neighbour in self.neighbours:
+                try:
+                    self.tcpSocket.connect((neighbour, Portas.SERVER))
+                    break
+                except ConnectionRefusedError:
+                    pass
 
             self.udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.udpSocket.settimeout(0.6)

@@ -17,27 +17,34 @@ class ServerDatabase:
         self.videos = self.loadVideos()
         self.videosStreaming = {}
 
-        self.sendProbes()
+        self.probeRunning = True
+
+        threading.Thread(target = self.sendProbes, args=()).start()
 
         self.viewedMessages = {}
 
+    def disableProbing(self):
+        self.probeRunning = False
+        
     def sendProbes(self):
-        probeMessage = Messages.probeRequest(0, time.time()).encode('utf-8')
-        for neighbour in self.neighbours:
-            probingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            try:
-                probingSocket.connect((neighbour, Portas.NODO))
-            except ConnectionRefusedError:
+        while self.probeRunning == True:
+            probeMessage = Messages.probeRequest(0, time.time()).encode('utf-8')
+            for neighbour in self.neighbours:
+                probingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                try:
+                    probingSocket.connect((neighbour, Portas.NODO))
+                except ConnectionRefusedError:
+                    probingSocket.close()
+                    continue
+
+                probingSocket.sendall(probeMessage)
+
+                time.sleep(0.01)
+
+                probingSocket.sendall(Messages.disconnectMessage().encode('utf-8'))
+
                 probingSocket.close()
-                continue
-
-            probingSocket.sendall(probeMessage)
-
-            time.sleep(0.01)
-
-            probingSocket.sendall(Messages.disconnectMessage().encode('utf-8'))
-
-            probingSocket.close()
+            time.sleep(2)
 
     def loadVideos(self):
         videos = {}

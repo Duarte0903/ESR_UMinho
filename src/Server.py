@@ -53,6 +53,7 @@ def main():
             time.sleep(1)
     except KeyboardInterrupt:
         print("Stopping server...")
+        server.manager.disableProbing()
         server.stop()
         sys.exit(0)
 
